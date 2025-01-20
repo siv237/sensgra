@@ -82,46 +82,85 @@
 
 - Python 3.11+
 - lm-sensors
-- RRDtool
+- RRDtool с библиотеками разработки
 - Современный веб-браузер
 
 ## Установка
 
 1. Установите системные зависимости:
 ```bash
-sudo apt install python3-rrdtool lm-sensors
+# Debian/Ubuntu
+sudo apt install python3-venv lm-sensors rrdtool librrd-dev
+
+# Arch Linux
+sudo pacman -S python lm_sensors rrdtool
+
+# Fedora
+sudo dnf install python3 lm_sensors rrdtool rrdtool-devel
 ```
 
-2. Создайте виртуальное окружение и активируйте его:
+2. Настройте и проверьте lm-sensors:
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-```
+# Автоматическое обнаружение сенсоров
+sudo sensors-detect --auto
 
-3. Установите зависимости Python:
-```bash
-pip install -r requirements.txt
-```
-
-4. Убедитесь что lm-sensors установлен и настроен:
-```bash
+# Проверка что сенсоры определились
 sensors -j
 ```
 
-## Автозапуск службы
-
-Для автоматического запуска логгера и веб-сервера при старте системы:
-
+3. Клонируйте репозиторий и перейдите в директорию:
 ```bash
-sudo ln -sf $(pwd)/sensors-plot.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable sensors-plot
-sudo systemctl start sensors-plot
+git clone https://github.com/yourusername/sensgra.git
+cd sensgra
 ```
 
-Проверка статуса:
+4. Запустите скрипт установки и запуска:
 ```bash
-sudo systemctl status sensors-plot
+# Создаст venv, установит зависимости и запустит логгер
+./run.sh
+```
+
+После запуска логгер будет:
+- Автоматически находить все доступные сенсоры
+- Создавать RRD базы для новых сенсоров
+- Собирать данные каждые 5 секунд
+- Хранить историю с автоматическим усреднением
+
+## Автозапуск через systemd
+
+1. Создайте файл systemd сервиса:
+```bash
+sudo nano /etc/systemd/system/sensgra.service
+```
+
+2. Добавьте следующее содержимое (измените пути на свои):
+```ini
+[Unit]
+Description=Sensgra - System Sensors Logger
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+WorkingDirectory=/path/to/sensgra
+ExecStart=/path/to/sensgra/run.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+3. Включите и запустите сервис:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable sensgra
+sudo systemctl start sensgra
+```
+
+4. Проверьте статус:
+```bash
+sudo systemctl status sensgra
 ```
 
 ## Структура проекта
