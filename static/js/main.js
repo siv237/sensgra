@@ -33,6 +33,39 @@ function getRandomColor() {
     return colors[Math.floor(Math.random() * colors.length)];
 }
 
+// Сохранение состояния графика
+function saveChartState(chart) {
+    const state = {};
+    chart.data.datasets.forEach(dataset => {
+        state[dataset.label] = {
+            hidden: dataset.hidden || false,
+            highlighted: dataset.highlighted || false,
+            color: dataset.borderColor
+        };
+    });
+    localStorage.setItem('chartState', JSON.stringify(state));
+}
+
+// Загрузка состояния графика
+function loadChartState(chart) {
+    const savedState = localStorage.getItem('chartState');
+    if (!savedState) return;
+
+    const state = JSON.parse(savedState);
+    chart.data.datasets.forEach(dataset => {
+        if (state[dataset.label]) {
+            dataset.hidden = state[dataset.label].hidden;
+            dataset.highlighted = state[dataset.label].highlighted;
+            dataset.borderWidth = state[dataset.label].highlighted ? 3 : 1;
+            if (state[dataset.label].color) {
+                dataset.borderColor = state[dataset.label].color;
+                dataset.backgroundColor = state[dataset.label].color;
+            }
+        }
+    });
+    chart.update();
+}
+
 // Класс для управления графиками
 class SensorCharts {
     constructor() {
@@ -158,6 +191,7 @@ class SensorCharts {
                                     dataset.borderWidth = 1;
                                 }
 
+                                saveChartState(chart);  // Сохраняем состояние
                                 chart.update();
                             },
                             onHover: (e, legendItem, legend) => {
@@ -192,21 +226,40 @@ class SensorCharts {
                             position: 'bottom'
                         },
                         y: {
-                            min: config.min,
-                            max: config.max,
-                            grid: {
-                                color: '#eee',
-                                drawBorder: false,
-                                drawTicks: false
-                            },
+                            beginAtZero: false,
+                            grace: '5%',
                             ticks: {
-                                padding: 5,
-                                font: {
-                                    size: 10
-                                }
+                                color: '#666'
                             },
-                            position: 'right'
-                        }
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            // Автоматическое масштабирование
+                            min: undefined,
+                            max: undefined,
+                            // Адаптируем под видимые датасеты
+                            afterDataLimits: (scale) => {
+                                const chart = scale.chart;
+                                const datasets = chart.data.datasets;
+                                let min = Infinity;
+                                let max = -Infinity;
+                                
+                                datasets.forEach(dataset => {
+                                    if (!dataset.hidden) {
+                                        dataset.data.forEach(point => {
+                                            if (point.y < min) min = point.y;
+                                            if (point.y > max) max = point.y;
+                                        });
+                                    }
+                                });
+                                
+                                if (min !== Infinity && max !== -Infinity) {
+                                    const padding = (max - min) * 0.1;
+                                    scale.min = min - padding;
+                                    scale.max = max + padding;
+                                }
+                            }
+                        },
                     },
                     layout: {
                         padding: {
@@ -231,7 +284,7 @@ class SensorCharts {
     createChart(canvasId, config) {
         const ctx = document.getElementById(canvasId).getContext('2d');
         const chart = new Chart(ctx, config);
-
+        loadChartState(chart);  // Загружаем состояние
         return chart;
     }
 
