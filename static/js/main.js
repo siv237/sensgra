@@ -55,20 +55,11 @@ class SensorCharts {
                 const color = getRandomColor();
                 this.sensorColors.set(sensorId, color);
                 
-                return {
-                    label: this.formatSensorName(sensorId),
-                    data: [],
-                    borderColor: color,
-                    backgroundColor: 'transparent',
-                    borderWidth: 1,
-                    pointRadius: 0,
-                    tension: 0,
-                    fill: false
-                };
+                return this.createDataset(sensorId, color);
             });
 
             // Создаём график
-            const chart = new Chart(canvas, {
+            const chart = this.createChart(`${type}-chart`, {
                 type: 'line',
                 data: { datasets },
                 options: {
@@ -117,7 +108,8 @@ class SensorCharts {
                                         color: dataset.borderColor,
                                         hidden: dataset.hidden,
                                         index: i,
-                                        numValue: dataset.data.length > 0 ? dataset.data[dataset.data.length - 1].y : -Infinity
+                                        numValue: dataset.data.length > 0 ? dataset.data[dataset.data.length - 1].y : -Infinity,
+                                        highlighted: dataset.highlighted
                                     }));
                                     
                                     // Сортируем по значению
@@ -126,9 +118,9 @@ class SensorCharts {
                                     // Возвращаем отсортированные элементы легенды
                                     return items.map(item => ({
                                         text: `${item.value} ${item.label}`,
-                                        fillStyle: item.color,
+                                        fillStyle: item.hidden ? 'transparent' : item.color,
                                         strokeStyle: item.color,
-                                        lineWidth: 2,
+                                        lineWidth: item.highlighted ? 3 : 1,
                                         hidden: item.hidden,
                                         index: item.index
                                     }));
@@ -145,8 +137,27 @@ class SensorCharts {
                                 const index = legendItem.index;
                                 const chart = legend.chart;
                                 const meta = chart.getDatasetMeta(index);
+                                const dataset = chart.data.datasets[index];
 
-                                meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+                                // Определяем текущее состояние
+                                if (!dataset.highlighted && !meta.hidden) {
+                                    // Обычный -> Жирный
+                                    dataset.highlighted = true;
+                                    dataset.borderWidth = 3;
+                                } else if (dataset.highlighted && !meta.hidden) {
+                                    // Жирный -> Скрытый
+                                    meta.hidden = true;
+                                    dataset.hidden = true;
+                                    dataset.highlighted = false;
+                                    dataset.borderWidth = 1;
+                                } else {
+                                    // Скрытый -> Обычный
+                                    meta.hidden = false;
+                                    dataset.hidden = false;
+                                    dataset.highlighted = false;
+                                    dataset.borderWidth = 1;
+                                }
+
                                 chart.update();
                             },
                             onHover: (e, legendItem, legend) => {
@@ -217,6 +228,28 @@ class SensorCharts {
         }
     }
 
+    createChart(canvasId, config) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const chart = new Chart(ctx, config);
+
+        return chart;
+    }
+
+    // Создание датасета для сенсора
+    createDataset(sensorId, color) {
+        return {
+            label: this.formatSensorName(sensorId),
+            data: [],
+            borderColor: color,
+            backgroundColor: 'transparent',
+            borderWidth: 1,  // Начальная толщина 1
+            highlighted: false,
+            pointRadius: 0,
+            tension: 0.1,
+            fill: false
+        };
+    }
+
     // Форматирование имени сенсора
     formatSensorName(sensorId) {
         const parts = sensorId.split('_');
@@ -246,7 +279,7 @@ class SensorCharts {
         const datasets = chart.data.datasets;
         updates.forEach(({ sensorId, data }, i) => {
             if (data && data.length > 0) {
-                const lastValue = data[data.length - 1][1]; // Берем Y из последней точки
+                const lastValue = data[data.length - 1][1];
                 const name = this.formatSensorName(sensorId);
                 const value = this.formatValue(lastValue, config.unit);
                 datasets[i].label = name;

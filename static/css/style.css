@@ -2,6 +2,7 @@
 body {
     background: #fff;
     color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Контейнер для графика */
@@ -15,6 +16,14 @@ body {
     border: 1px solid #ccc;
 }
 
+/* Контейнер для графика */
+.chart-container {
+    width: 100%;
+    height: calc(100vh - 100px);
+    position: relative;
+    padding: 10px;
+}
+
 /* Анимации */
 .chart-container {
     transition: all 0.3s ease;
@@ -23,4 +32,81 @@ body {
 .chart-container:hover {
     box-shadow: 0 0 20px rgba(0,255,0,0.2);
     border-color: #444;
+}
+
+/* Легенда */
+.legend-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 12px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    transition: all 0.2s ease;
+}
+
+.legend-item:hover {
+    background: #f0f0f0;
+    border-color: #ddd;
+}
+
+.legend-checkbox {
+    margin-right: 8px;
+}
+
+.legend-color {
+    width: 12px;
+    height: 2px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.legend-value {
+    font-weight: 500;
+    margin-right: 8px;
+    min-width: 65px;
+}
+
+.legend-label {
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Стили для легенды */
+.chartjs-legend-item {
+    cursor: pointer;
+    display: flex !important;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.chartjs-legend-item:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+/* Область квадратика */
+.chartjs-legend-item span:first-child {
+    cursor: pointer;
+    margin-right: 8px;
+    padding: 2px;
+}
+
+/* Область текста */
+.chartjs-legend-item span:last-child {
+    cursor: pointer;
+    flex-grow: 1;
+    padding: 2px 4px;
 }
