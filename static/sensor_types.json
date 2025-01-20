@@ -1,0 +1,49 @@
+{
+    "types": {
+        "temperature": {
+            "name": "Температуры",
+            "unit": "°C",
+            "color": "#ff4444",
+            "min": 0,
+            "max": 100,
+            "matches": [
+                "_temp\\d+_input$",
+                "temp\\d+_input$"
+            ]
+        },
+        "fan": {
+            "name": "Обороты",
+            "unit": "RPM",
+            "color": "#44ff44",
+            "min": 0,
+            "max": 3000,
+            "matches": [
+                "_fan\\d+_input$",
+                "fan\\d+_input$"
+            ]
+        },
+        "voltage": {
+            "name": "Напряжения",
+            "unit": "V",
+            "color": "#4444ff",
+            "min": 0,
+            "max": 12,
+            "matches": [
+                "_in\\d+_input$",
+                "in\\d+_input$",
+                "vddgfx"
+            ]
+        },
+        "power": {
+            "name": "Мощность",
+            "unit": "W",
+            "color": "#ffaa44",
+            "min": 0,
+            "max": 300,
+            "matches": [
+                "_power\\d+_average$",
+                "power\\d+_average$"
+            ]
+        }
+    }
+}
