@@ -108,12 +108,52 @@ class SensorCharts {
                         legend: {
                             position: 'right',
                             labels: {
-                                boxWidth: 15,
-                                padding: 10,
+                                generateLabels: (chart) => {
+                                    const datasets = chart.data.datasets;
+                                    // Создаем массив с данными для сортировки
+                                    const items = datasets.map((dataset, i) => ({
+                                        value: dataset.value || '',
+                                        label: dataset.label,
+                                        color: dataset.borderColor,
+                                        hidden: dataset.hidden,
+                                        index: i,
+                                        numValue: dataset.data.length > 0 ? dataset.data[dataset.data.length - 1].y : -Infinity
+                                    }));
+                                    
+                                    // Сортируем по значению
+                                    items.sort((a, b) => b.numValue - a.numValue);
+                                    
+                                    // Возвращаем отсортированные элементы легенды
+                                    return items.map(item => ({
+                                        text: `${item.value} ${item.label}`,
+                                        fillStyle: item.color,
+                                        strokeStyle: item.color,
+                                        lineWidth: 2,
+                                        hidden: item.hidden,
+                                        index: item.index
+                                    }));
+                                },
+                                usePointStyle: false,
+                                boxWidth: 12,
+                                padding: 8,
                                 font: {
-                                    family: 'monospace',
-                                    size: 11
+                                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                    size: 12
                                 }
+                            },
+                            onClick: (e, legendItem, legend) => {
+                                const index = legendItem.index;
+                                const chart = legend.chart;
+                                const meta = chart.getDatasetMeta(index);
+
+                                meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+                                chart.update();
+                            },
+                            onHover: (e, legendItem, legend) => {
+                                e.native.target.style.cursor = 'pointer';
+                            },
+                            onLeave: (e, legendItem, legend) => {
+                                e.native.target.style.cursor = 'default';
                             }
                         }
                     },
@@ -195,9 +235,29 @@ class SensorCharts {
         return `${device} - ${sensor}`;
     }
 
+    // Форматирование значения с единицей измерения
+    formatValue(value, unit) {
+        const formatted = Number(value).toFixed(2);
+        return `${formatted}${unit}`.padEnd(8);
+    }
+
+    // Обновление легенды с текущими значениями
+    updateLegend(chart, updates, config) {
+        const datasets = chart.data.datasets;
+        updates.forEach(({ sensorId, data }, i) => {
+            if (data && data.length > 0) {
+                const lastValue = data[data.length - 1][1]; // Берем Y из последней точки
+                const name = this.formatSensorName(sensorId);
+                const value = this.formatValue(lastValue, config.unit);
+                datasets[i].label = name;
+                datasets[i].value = value;
+            }
+        });
+    }
+
     // Обновление данных графика
     async updateChart(type, info) {
-        const { chart, sensors } = info;
+        const { chart, sensors, config } = info;
         
         try {
             // Получаем новые данные для всех сенсоров
@@ -213,6 +273,9 @@ class SensorCharts {
             updates.forEach(({ sensorId, data }, index) => {
                 chart.data.datasets[index].data = data.map(([x, y]) => ({x, y}));
             });
+
+            // Обновляем легенду с текущими значениями
+            this.updateLegend(chart, updates, config);
 
             chart.update('none');  // без анимации
         } catch (error) {
