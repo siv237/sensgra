@@ -1,0 +1,26 @@
+/* Основные стили */
+body {
+    background: #fff;
+    color: #333;
+}
+
+/* Контейнер для графика */
+.chart-container {
+    background: #fff;
+    padding: 1rem;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    height: 80vh;
+    margin: 1rem;
+    position: relative;
+    border: 1px solid #ccc;
+}
+
+/* Анимации */
+.chart-container {
+    transition: all 0.3s ease;
+}
+
+.chart-container:hover {
+    box-shadow: 0 0 20px rgba(0,255,0,0.2);
+    border-color: #444;
+}
