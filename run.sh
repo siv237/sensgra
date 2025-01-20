@@ -10,5 +10,8 @@ fi
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Запускаем логгер
-./sensor-logger.py
+# Запускаем логгер в фоне
+./sensor-logger.py &
+
+# Запускаем веб-интерфейс
+./app.py
