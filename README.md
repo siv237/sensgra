@@ -46,32 +46,6 @@
 
 ## Настройка отображения
 
-### sensor_names.json
-
-Файл `static/sensor_names.json` определяет настройки отображения сенсоров в веб-интерфейсе:
-
-```json
-{
-    "devices": {
-        "amdgpu-pci-0400": {           // ID устройства
-            "имя": "Видеокарта AMD",    // Имя для отображения
-            "sensors": {
-                "edge": {               // ID сенсора
-                    "имя": "Температура GPU",  // Имя для графика
-                    "тип": "температура"       // Тип для группировки
-                }
-            }
-        }
-    },
-    "graphs": {                         // Настройки групп графиков
-        "температура": {
-            "имя": "Температуры",
-            "единица": "°C"
-        }
-    }
-}
-```
-
 - Настройки влияют только на отображение в веб-интерфейсе
 - Логгер работает независимо от этого файла
 - Сенсоры группируются по типу для удобства просмотра
@@ -126,42 +100,29 @@ cd sensgra
 - Собирать данные каждые 5 секунд
 - Хранить историю с автоматическим усреднением
 
-## Автозапуск через systemd
+## Установка как системная служба
 
-1. Создайте файл systemd сервиса:
+1. Создайте симлинк на файл службы (нужны права root для доступа к сенсорам):
 ```bash
-sudo nano /etc/systemd/system/sensgra.service
+sudo ln -sf /path/to/sensgra/sensgra.service /etc/systemd/system/
 ```
 
-2. Добавьте следующее содержимое (измените пути на свои):
-```ini
-[Unit]
-Description=Sensgra - System Sensors Logger
-After=network.target
-
-[Service]
-Type=simple
-User=YOUR_USERNAME
-WorkingDirectory=/path/to/sensgra
-ExecStart=/path/to/sensgra/run.sh
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-```
-
-3. Включите и запустите сервис:
+2. Перезагрузите конфигурацию systemd и запустите:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable sensgra
 sudo systemctl start sensgra
 ```
 
-4. Проверьте статус:
-```bash
-sudo systemctl status sensgra
-```
+Служба запускается от пользователя root, так как для чтения данных с сенсоров требуются соответствующие права доступа.
+
+Управление службой:
+- Остановка: `sudo systemctl stop sensgra`
+- Перезапуск: `sudo systemctl restart sensgra`
+- Просмотр логов: `sudo journalctl -u sensgra`
+- Статус: `sudo systemctl status sensgra`
+
+
 
 ## Структура проекта
 
