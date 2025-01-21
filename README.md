@@ -94,7 +94,34 @@ sudo modprobe nct6775   # Сенсоры материнской платы (ес
 sensors -j
 ```
 
-3. Добавьте модули в автозагрузку:
+3. Настройте калибровку сенсоров:
+```bash
+# Создаем файл с настройками для вашей материнской платы
+sudo nano /etc/sensors.d/myboard.conf
+
+# Пример содержимого файла:
+chip "nct6779-*"
+    # Названия сенсоров
+    label in0 "Vcore"
+    label in2 "AVCC"
+    label in3 "+3.3V"
+    label in7 "3VSB"
+    label in8 "Vbat"
+
+    # Пределы напряжений (90-110% от номинала)
+    set in2_min  3.3 * 0.90
+    set in2_max  3.3 * 1.10
+    set in3_min  3.3 * 0.90
+    set in3_max  3.3 * 1.10
+
+    # Коррекция показаний (если значения неточные)
+    compute in3  @*2, @/2  # Умножить на 2 при чтении, делить на 2 при записи
+
+# Применяем новые настройки
+sudo service kmod restart
+```
+
+4. Добавьте модули в автозагрузку:
 ```bash
 # Создаем конфиг для автозагрузки модулей
 echo "coretemp" | sudo tee /etc/modules-load.d/sensors.conf
@@ -104,13 +131,13 @@ echo "nct6775" | sudo tee -a /etc/modules-load.d/sensors.conf
 sudo systemctl restart systemd-modules-load
 ```
 
-4. Клонируйте репозиторий и перейдите в директорию:
+5. Клонируйте репозиторий и перейдите в директорию:
 ```bash
 git clone https://github.com/siv237/sensgra.git
 cd sensgra
 ```
 
-5. Запустите скрипт установки и запуска:
+6. Запустите скрипт установки и запуска:
 ```bash
 # Создаст venv, установит зависимости и запустит логгер
 ./run.sh
