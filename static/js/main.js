@@ -39,13 +39,15 @@ class SensorCharts {
         this.charts = new Map();  // type -> Chart
         this.sensorColors = new Map();  // sensorId -> color
         this.currentPeriod = '10m';  // период по умолчанию
+        this.chartState = {};
         
         // Инициализация
-        this.initPeriodButtons();
-        this.initCharts();
-        this.startUpdates();
-        
-        console.log('SensorCharts initialized');
+        this.loadState().then(() => {
+            this.initPeriodButtons();
+            this.initCharts();
+            this.startUpdates();
+            console.log('SensorCharts initialized');
+        });
     }
 
     // Инициализация кнопок периода
@@ -172,8 +174,8 @@ class SensorCharts {
                             display: true,
                             text: config.unit
                         },
-                        min: config.min,
-                        max: config.max
+                        beginAtZero: false,
+                        grace: '5%'  // Добавляем 5% отступа сверху и снизу
                     }
                 },
                 plugins: {
@@ -209,7 +211,13 @@ class SensorCharts {
                                 family: 'monospace'
                             },
                             generateLabels: (chart) => {
-                                return chart.data.datasets.map((dataset, i) => ({
+                                // Сортируем датасеты по значению
+                                const datasets = chart.data.datasets
+                                    .map((dataset, i) => ({dataset, i}))
+                                    .filter(({dataset}) => dataset.value !== undefined)
+                                    .sort((a, b) => b.dataset.value - a.dataset.value);
+                                
+                                return datasets.map(({dataset, i}) => ({
                                     text: `${dataset.value || ''} ${dataset.label}`,
                                     fillStyle: dataset.borderColor,
                                     strokeStyle: dataset.borderColor,
@@ -244,6 +252,7 @@ class SensorCharts {
                             }
 
                             chart.update();
+                            this.saveState();  // Сохраняем состояние после изменения
                         }
                     }
                 }
@@ -256,17 +265,25 @@ class SensorCharts {
 
     // Создание датасета для сенсора
     createDataset(sensorId, color) {
+        // Загружаем сохраненное состояние
+        const chartType = Object.keys(window.SENSOR_TYPES).find(type => 
+            window.INITIAL_SENSORS[type]?.includes(sensorId)
+        );
+        const state = this.chartState[chartType]?.[sensorId] || {};
+        
         return {
             label: this.formatSensorName(sensorId),
             sensorId: sensorId,
             data: [],
             borderColor: color,
             backgroundColor: color,
-            borderWidth: 1,
+            borderWidth: state.borderWidth || 1,
             tension: 0.2,
             pointRadius: 0,
             fill: false,
-            spanGaps: false  // Не соединять точки если между ними большой промежуток
+            hidden: state.hidden || false,
+            highlighted: state.highlighted || false,
+            spanGaps: false
         };
     }
 
@@ -325,6 +342,18 @@ class SensorCharts {
                 break;
         }
         
+        // Сохраняем состояние датасетов
+        const datasetStates = new Map(
+            chart.data.datasets.map(dataset => [
+                dataset.sensorId,
+                {
+                    hidden: dataset.hidden,
+                    highlighted: dataset.highlighted,
+                    borderWidth: dataset.borderWidth
+                }
+            ])
+        );
+        
         // Загружаем данные для каждого сенсора
         const updates = await Promise.all(
             chart.data.datasets.map(async dataset => {
@@ -342,7 +371,20 @@ class SensorCharts {
                     // Обновляем значение в легенде
                     if (data.length > 0) {
                         const lastValue = data[data.length - 1][1];
-                        dataset.value = lastValue.toFixed(1);
+                        dataset.value = lastValue;  // Сохраняем точное значение для сортировки
+                        dataset.value = lastValue.toFixed(1);  // Форматированное значение для отображения
+                    }
+                    
+                    // Восстанавливаем состояние
+                    const state = datasetStates.get(dataset.sensorId);
+                    if (state) {
+                        dataset.hidden = state.hidden;
+                        dataset.highlighted = state.highlighted;
+                        dataset.borderWidth = state.borderWidth;
+                        
+                        // Также обновляем мета-состояние
+                        const meta = chart.getDatasetMeta(chart.data.datasets.indexOf(dataset));
+                        meta.hidden = state.hidden;
                     }
                     
                 } catch (error) {
@@ -366,6 +408,48 @@ class SensorCharts {
     startUpdates() {
         // Обновляем каждые 5 секунд
         setInterval(() => this.reloadAllData(), 5000);
+    }
+
+    // Загрузка состояния с сервера
+    async loadState() {
+        try {
+            const response = await fetch('/api/chart_state');
+            const state = await response.json();
+            this.chartState = state;
+            console.log('Loaded chart state:', state);
+        } catch (error) {
+            console.error('Failed to load chart state:', error);
+            this.chartState = {};
+        }
+    }
+
+    // Сохранение состояния на сервер
+    async saveState() {
+        const state = {};
+        for (const [type, chart] of this.charts) {
+            state[type] = {};
+            chart.data.datasets.forEach(dataset => {
+                state[type][dataset.sensorId] = {
+                    hidden: dataset.hidden || false,
+                    highlighted: dataset.highlighted || false,
+                    borderWidth: dataset.borderWidth || 1
+                };
+            });
+        }
+        
+        try {
+            await fetch('/api/chart_state', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(state)
+            });
+            this.chartState = state;
+            console.log('Saved chart state:', state);
+        } catch (error) {
+            console.error('Failed to save chart state:', error);
+        }
     }
 }
 

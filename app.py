@@ -14,6 +14,28 @@ app = Flask(__name__)
 with open('static/sensor_types.json', 'r') as f:
     SENSOR_TYPES = json.load(f)['types']
 
+# Путь к файлу состояния
+CHART_STATE_FILE = 'static/chart_state.json'
+
+# Загружаем состояние при старте
+def load_chart_state():
+    if os.path.exists(CHART_STATE_FILE):
+        try:
+            with open(CHART_STATE_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+# Сохраняем состояние
+def save_chart_state(state):
+    os.makedirs(os.path.dirname(CHART_STATE_FILE), exist_ok=True)
+    with open(CHART_STATE_FILE, 'w') as f:
+        json.dump(state, f)
+
+# Глобальное состояние графиков
+CHART_STATE = load_chart_state()
+
 class SensorManager:
     def __init__(self, rrd_dir: str = 'rrd'):
         self.rrd_dir = rrd_dir
@@ -137,6 +159,19 @@ def get_sensor_data(sensor_name):
     
     app.logger.info(f"Возвращаем {len(data)} точек данных")
     return jsonify(data)
+
+@app.route('/api/chart_state', methods=['GET'])
+def get_chart_state():
+    """Получить состояние всех графиков"""
+    return jsonify(CHART_STATE)
+
+@app.route('/api/chart_state', methods=['POST'])
+def update_chart_state():
+    """Обновить состояние графиков"""
+    global CHART_STATE
+    CHART_STATE = request.json
+    save_chart_state(CHART_STATE)
+    return jsonify({"status": "ok"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=23723, debug=True)
