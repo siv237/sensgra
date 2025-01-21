@@ -72,19 +72,26 @@ class SensorCharts {
 
     // Получение временного диапазона для текущего периода
     getPeriodRange() {
-        const end = 'now';
-        let start;
+        const now = Date.now();
+        let startTime;
         
         switch(this.currentPeriod) {
-            case '10m': start = 'end-10m'; break;
-            case '1h':  start = 'end-1h';  break;
-            case '1d':  start = 'end-1d';  break;
-            case '1w':  start = 'end-7d';  break;
-            default:    start = 'end-1h';
+            case '10m': startTime = now - 10 * 60 * 1000; break;
+            case '1h':  startTime = now - 60 * 60 * 1000; break;
+            case '1d':  startTime = now - 24 * 60 * 60 * 1000; break;
+            case '1w':  startTime = now - 7 * 24 * 60 * 60 * 1000; break;
+            default:    startTime = now - 60 * 60 * 1000;
         }
         
-        console.log('Time range:', { start, end, period: this.currentPeriod });
-        return { start, end };
+        // Для API используем RRDtool формат
+        const start = `end-${this.currentPeriod}`;
+        const end = 'now';
+        
+        console.log('Time range:', { start, end, period: this.currentPeriod, 
+                                   startTime: new Date(startTime), 
+                                   endTime: new Date(now) });
+        
+        return { start, end, startTime, endTime: now };
     }
 
     // Форматирование имени сенсора
@@ -132,7 +139,10 @@ class SensorCharts {
                         title: {
                             display: true,
                             text: 'Время'
-                        }
+                        },
+                        // Явно задаем границы оси X
+                        min: undefined,  // Будем устанавливать динамически
+                        max: undefined   // Будем устанавливать динамически
                     },
                     y: {
                         title: {
@@ -232,7 +242,8 @@ class SensorCharts {
             borderWidth: 1,
             tension: 0.2,
             pointRadius: 0,
-            fill: false
+            fill: false,
+            spanGaps: false  // Не соединять точки если между ними большой промежуток
         };
     }
 
@@ -265,7 +276,11 @@ class SensorCharts {
     // Загрузка данных для всего графика
     async loadChartData(type, chart) {
         console.log(`Loading data for ${type}`);
-        const { start, end } = this.getPeriodRange();
+        const { start, end, startTime, endTime } = this.getPeriodRange();
+        
+        // Устанавливаем границы оси X
+        chart.options.scales.x.min = startTime;
+        chart.options.scales.x.max = endTime;
         
         // Загружаем данные для каждого сенсора
         const updates = await Promise.all(
