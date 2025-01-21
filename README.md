@@ -92,7 +92,7 @@ sensors -j
 
 3. Клонируйте репозиторий и перейдите в директорию:
 ```bash
-git clone https://github.com/yourusername/sensgra.git
+git clone https://github.com/siv237/sensgra.git
 cd sensgra
 ```
 
