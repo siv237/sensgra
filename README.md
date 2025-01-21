@@ -86,17 +86,31 @@ sudo dnf install python3 lm_sensors rrdtool rrdtool-devel
 # Автоматическое обнаружение сенсоров
 sudo sensors-detect --auto
 
+# Убедитесь что загружены нужные модули ядра
+sudo modprobe coretemp  # Сенсоры температуры процессора
+sudo modprobe nct6775   # Сенсоры материнской платы (если есть)
+
 # Проверка что сенсоры определились
 sensors -j
 ```
 
-3. Клонируйте репозиторий и перейдите в директорию:
+3. Добавьте модули в автозагрузку:
+```bash
+# Создаем конфиг для автозагрузки модулей
+echo "coretemp" | sudo tee /etc/modules-load.d/sensors.conf
+echo "nct6775" | sudo tee -a /etc/modules-load.d/sensors.conf
+
+# Применяем изменения
+sudo systemctl restart systemd-modules-load
+```
+
+4. Клонируйте репозиторий и перейдите в директорию:
 ```bash
 git clone https://github.com/siv237/sensgra.git
 cd sensgra
 ```
 
-4. Запустите скрипт установки и запуска:
+5. Запустите скрипт установки и запуска:
 ```bash
 # Создаст venv, установит зависимости и запустит логгер
 ./run.sh
