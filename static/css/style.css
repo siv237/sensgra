@@ -9,70 +9,99 @@ body {
     overflow: hidden;
 }
 
+/* Навбар */
+.navbar {
+    padding: 0.3rem 1rem;
+}
+
+/* Основной контейнер */
+.container-fluid {
+    padding: 0.5rem;
+}
+
+/* Группа кнопок периода */
+.btn-group {
+    margin-bottom: 0.5rem;
+}
+
+.btn-group .btn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Табы */
+.nav-tabs {
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    padding: 0.25rem 1rem;
+    font-size: 0.875rem;
+}
+
 /* Контейнер для графика */
 .chart-container {
     width: 100%;
-    height: calc(100vh - 150px);  /* Вычитаем высоту навбара, кнопок и табов */
+    height: calc(100vh - 120px);  /* Вычитаем высоту навбара, кнопок и табов */
     position: relative;
-    padding: 10px;
+    padding: 0.5rem;
     background: #fff;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-    border: 1px solid #ccc;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Анимации */
+.chart-container {
     transition: all 0.3s ease;
 }
 
 .chart-container:hover {
-    box-shadow: 0 0 20px rgba(0,255,0,0.2);
-    border-color: #444;
+    border-color: #aaa;
 }
 
 /* Легенда */
 .legend-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    padding: 10px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    padding: 0.5rem;
+    font-family: monospace;
     font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    padding: 6px 8px;
-    border-radius: 4px;
-    background: #f8f9fa;
-    border: 1px solid #eee;
-    transition: all 0.2s ease;
+    padding: 0.25rem;
+    border-radius: 2px;
+    cursor: pointer;
 }
 
 .legend-item:hover {
-    background: #f0f0f0;
-    border-color: #ddd;
+    background: #f8f9fa;
 }
 
-.legend-checkbox {
-    margin-right: 8px;
+/* Кнопки периода */
+.period-btn {
+    min-width: 100px;
+    font-family: monospace;
+    transition: all 0.2s ease;
 }
 
-.legend-color {
-    width: 12px;
-    height: 2px;
-    margin-right: 8px;
-    flex-shrink: 0;
+.period-btn:hover {
+    background-color: #e9ecef;
 }
 
-.legend-value {
-    font-weight: 500;
-    margin-right: 8px;
-    min-width: 65px;
+.period-btn.active {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
 }
 
-.legend-label {
-    color: #666;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.period-btn.active:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
 }
 
 /* Стили для легенды */
@@ -101,30 +130,4 @@ body {
     cursor: pointer;
     flex-grow: 1;
     padding: 2px 4px;
-}
-
-/* Кнопки периода */
-.btn-group {
-    margin-left: 1rem;
-}
-
-.period-btn {
-    min-width: 100px;
-    font-family: monospace;
-    transition: all 0.2s ease;
-}
-
-.period-btn:hover {
-    background-color: #e9ecef;
-}
-
-.period-btn.active {
-    background-color: #6c757d;
-    color: white;
-    border-color: #6c757d;
-}
-
-.period-btn.active:hover {
-    background-color: #5a6268;
-    border-color: #545b62;
 }

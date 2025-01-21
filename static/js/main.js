@@ -205,11 +205,17 @@ class SensorCharts {
                     },
                     legend: {
                         position: 'right',
+                        align: 'start',
                         labels: {
-                            padding: 10,
+                            padding: 8,
+                            boxWidth: 12,
+                            boxHeight: 12,
                             font: {
-                                family: 'monospace'
+                                family: 'monospace',
+                                size: 11
                             },
+                            usePointStyle: true,
+                            pointStyle: 'rectRounded',
                             generateLabels: (chart) => {
                                 // Сортируем датасеты по значению
                                 const datasets = chart.data.datasets
