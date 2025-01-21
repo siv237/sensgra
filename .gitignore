@@ -20,3 +20,6 @@ rrd/*.rrd
 # Local config
 instance/
 .env
+
+# Project specific
+static/chart_state.json
