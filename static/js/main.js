@@ -23,47 +23,14 @@ function formatDateTime(date) {
 function getRandomColor() {
     // Используем более спокойные цвета
     const colors = [
-        'rgb(255, 0, 0)',    // красный
-        'rgb(0, 128, 0)',    // зеленый
-        'rgb(0, 0, 255)',    // синий
-        'rgb(255, 165, 0)',  // оранжевый
-        'rgb(128, 0, 128)',  // фиолетовый
-        'rgb(0, 128, 128)',  // бирюзовый
+        'rgb(255, 99, 132)',   // красный
+        'rgb(75, 192, 192)',   // бирюзовый
+        'rgb(54, 162, 235)',   // синий
+        'rgb(255, 159, 64)',   // оранжевый
+        'rgb(153, 102, 255)',  // фиолетовый
+        'rgb(255, 205, 86)',   // желтый
     ];
     return colors[Math.floor(Math.random() * colors.length)];
-}
-
-// Сохранение состояния графика
-function saveChartState(chart) {
-    const state = {};
-    chart.data.datasets.forEach(dataset => {
-        state[dataset.label] = {
-            hidden: dataset.hidden || false,
-            highlighted: dataset.highlighted || false,
-            color: dataset.borderColor
-        };
-    });
-    localStorage.setItem('chartState', JSON.stringify(state));
-}
-
-// Загрузка состояния графика
-function loadChartState(chart) {
-    const savedState = localStorage.getItem('chartState');
-    if (!savedState) return;
-
-    const state = JSON.parse(savedState);
-    chart.data.datasets.forEach(dataset => {
-        if (state[dataset.label]) {
-            dataset.hidden = state[dataset.label].hidden;
-            dataset.highlighted = state[dataset.label].highlighted;
-            dataset.borderWidth = state[dataset.label].highlighted ? 3 : 1;
-            if (state[dataset.label].color) {
-                dataset.borderColor = state[dataset.label].color;
-                dataset.backgroundColor = state[dataset.label].color;
-            }
-        }
-    });
-    chart.update();
 }
 
 // Класс для управления графиками
@@ -71,236 +38,53 @@ class SensorCharts {
     constructor() {
         this.charts = new Map();  // type -> Chart
         this.sensorColors = new Map();  // sensorId -> color
+        this.currentPeriod = '10m';  // период по умолчанию
+        
+        // Инициализация
+        this.initPeriodButtons();
         this.initCharts();
         this.startUpdates();
+        
+        console.log('SensorCharts initialized');
     }
 
-    // Инициализация графиков для каждого типа
-    initCharts() {
-        for (const [type, sensors] of Object.entries(window.INITIAL_SENSORS)) {
-            const canvas = document.getElementById(`${type}-chart`);
-            if (!canvas) continue;
-
-            const config = window.SENSOR_TYPES[type];
-            
-            // Создаём датасеты для каждого сенсора
-            const datasets = sensors.map(sensorId => {
-                const color = getRandomColor();
-                this.sensorColors.set(sensorId, color);
+    // Инициализация кнопок периода
+    initPeriodButtons() {
+        console.log('Initializing period buttons');
+        document.querySelectorAll('.period-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                console.log('Period button clicked:', btn.dataset.period);
                 
-                return this.createDataset(sensorId, color);
+                // Убираем active со всех кнопок
+                document.querySelectorAll('.period-btn').forEach(b => 
+                    b.classList.remove('active')
+                );
+                
+                // Добавляем active на нажатую кнопку
+                btn.classList.add('active');
+                
+                // Обновляем период и перезагружаем данные
+                this.currentPeriod = btn.dataset.period;
+                this.reloadAllData();
             });
+        });
+    }
 
-            // Создаём график
-            const chart = this.createChart(`${type}-chart`, {
-                type: 'line',
-                data: { datasets },
-                options: {
-                    animation: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'nearest'
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: config.name,
-                            font: {
-                                size: 14,
-                                family: 'monospace'
-                            },
-                            padding: 10
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(255,255,255,0.9)',
-                            titleColor: '#333',
-                            bodyColor: '#333',
-                            borderColor: '#ccc',
-                            borderWidth: 1,
-                            padding: 10,
-                            displayColors: true,
-                            callbacks: {
-                                label: (context) => {
-                                    const value = Number(context.raw.y).toFixed(2);
-                                    return `${context.dataset.label}: ${value}${config.unit}`;
-                                },
-                                title: (tooltipItems) => {
-                                    return formatDateTime(new Date(tooltipItems[0].parsed.x));
-                                }
-                            }
-                        },
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                generateLabels: (chart) => {
-                                    const datasets = chart.data.datasets;
-                                    // Создаем массив с данными для сортировки
-                                    const items = datasets.map((dataset, i) => ({
-                                        value: dataset.value || '',
-                                        label: dataset.label,
-                                        color: dataset.borderColor,
-                                        hidden: dataset.hidden,
-                                        index: i,
-                                        numValue: dataset.data.length > 0 ? dataset.data[dataset.data.length - 1].y : -Infinity,
-                                        highlighted: dataset.highlighted
-                                    }));
-                                    
-                                    // Сортируем по значению
-                                    items.sort((a, b) => b.numValue - a.numValue);
-                                    
-                                    // Возвращаем отсортированные элементы легенды
-                                    return items.map(item => ({
-                                        text: `${item.value} ${item.label}`,
-                                        fillStyle: item.hidden ? 'transparent' : item.color,
-                                        strokeStyle: item.color,
-                                        lineWidth: item.highlighted ? 3 : 1,
-                                        hidden: item.hidden,
-                                        index: item.index
-                                    }));
-                                },
-                                usePointStyle: false,
-                                boxWidth: 12,
-                                padding: 8,
-                                font: {
-                                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                                    size: 12
-                                }
-                            },
-                            onClick: (e, legendItem, legend) => {
-                                const index = legendItem.index;
-                                const chart = legend.chart;
-                                const meta = chart.getDatasetMeta(index);
-                                const dataset = chart.data.datasets[index];
-
-                                // Определяем текущее состояние
-                                if (!dataset.highlighted && !meta.hidden) {
-                                    // Обычный -> Жирный
-                                    dataset.highlighted = true;
-                                    dataset.borderWidth = 3;
-                                } else if (dataset.highlighted && !meta.hidden) {
-                                    // Жирный -> Скрытый
-                                    meta.hidden = true;
-                                    dataset.hidden = true;
-                                    dataset.highlighted = false;
-                                    dataset.borderWidth = 1;
-                                } else {
-                                    // Скрытый -> Обычный
-                                    meta.hidden = false;
-                                    dataset.hidden = false;
-                                    dataset.highlighted = false;
-                                    dataset.borderWidth = 1;
-                                }
-
-                                saveChartState(chart);  // Сохраняем состояние
-                                chart.update();
-                            },
-                            onHover: (e, legendItem, legend) => {
-                                e.native.target.style.cursor = 'pointer';
-                            },
-                            onLeave: (e, legendItem, legend) => {
-                                e.native.target.style.cursor = 'default';
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: 'minute',
-                                displayFormats: {
-                                    minute: 'HH:mm:ss'
-                                }
-                            },
-                            grid: {
-                                color: '#eee',
-                                drawBorder: false,
-                                drawTicks: false
-                            },
-                            ticks: {
-                                maxRotation: 0,
-                                padding: 5,
-                                font: {
-                                    size: 10
-                                }
-                            },
-                            position: 'bottom'
-                        },
-                        y: {
-                            beginAtZero: false,
-                            grace: '5%',
-                            ticks: {
-                                color: '#666'
-                            },
-                            grid: {
-                                color: 'rgba(0,0,0,0.1)'
-                            },
-                            // Автоматическое масштабирование
-                            min: undefined,
-                            max: undefined,
-                            // Адаптируем под видимые датасеты
-                            afterDataLimits: (scale) => {
-                                const chart = scale.chart;
-                                const datasets = chart.data.datasets;
-                                let min = Infinity;
-                                let max = -Infinity;
-                                
-                                datasets.forEach(dataset => {
-                                    if (!dataset.hidden) {
-                                        dataset.data.forEach(point => {
-                                            if (point.y < min) min = point.y;
-                                            if (point.y > max) max = point.y;
-                                        });
-                                    }
-                                });
-                                
-                                if (min !== Infinity && max !== -Infinity) {
-                                    const padding = (max - min) * 0.1;
-                                    scale.min = min - padding;
-                                    scale.max = max + padding;
-                                }
-                            }
-                        },
-                    },
-                    layout: {
-                        padding: {
-                            top: 10,
-                            right: 10,
-                            bottom: 10,
-                            left: 10
-                        }
-                    }
-                }
-            });
-
-            // Сохраняем график
-            this.charts.set(type, {
-                chart,
-                sensors,
-                config
-            });
+    // Получение временного диапазона для текущего периода
+    getPeriodRange() {
+        const end = 'now';
+        let start;
+        
+        switch(this.currentPeriod) {
+            case '10m': start = 'end-10m'; break;
+            case '1h':  start = 'end-1h';  break;
+            case '1d':  start = 'end-1d';  break;
+            case '1w':  start = 'end-7d';  break;
+            default:    start = 'end-1h';
         }
-    }
-
-    createChart(canvasId, config) {
-        const ctx = document.getElementById(canvasId).getContext('2d');
-        const chart = new Chart(ctx, config);
-        loadChartState(chart);  // Загружаем состояние
-        return chart;
-    }
-
-    // Создание датасета для сенсора
-    createDataset(sensorId, color) {
-        return {
-            label: this.formatSensorName(sensorId),
-            data: [],
-            borderColor: color,
-            backgroundColor: 'transparent',
-            borderWidth: 1,  // Начальная толщина 1
-            highlighted: false,
-            pointRadius: 0,
-            tension: 0.1,
-            fill: false
-        };
+        
+        console.log('Time range:', { start, end, period: this.currentPeriod });
+        return { start, end };
     }
 
     // Форматирование имени сенсора
@@ -321,71 +105,213 @@ class SensorCharts {
         return `${device} - ${sensor}`;
     }
 
-    // Форматирование значения с единицей измерения
-    formatValue(value, unit) {
-        const formatted = Number(value).toFixed(2);
-        return `${formatted}${unit}`.padEnd(8);
-    }
+    // Создание графика
+    createChart(canvasId, config) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: { datasets: [] },
+            options: {
+                animation: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'nearest'
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                            displayFormats: {
+                                minute: 'HH:mm',
+                                hour: 'HH:mm',
+                                day: 'DD.MM',
+                                week: 'DD.MM'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Время'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: config.unit
+                        },
+                        min: config.min,
+                        max: config.max
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: config.name,
+                        font: {
+                            size: 16,
+                            family: 'monospace'
+                        },
+                        padding: 20
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(255,255,255,0.9)',
+                        titleColor: '#333',
+                        bodyColor: '#333',
+                        borderColor: '#ccc',
+                        borderWidth: 1,
+                        padding: 10,
+                        callbacks: {
+                            title: (items) => formatDateTime(new Date(items[0].parsed.x)),
+                            label: (item) => {
+                                const value = item.parsed.y.toFixed(1);
+                                return `${item.dataset.label}: ${value}${config.unit}`;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 10,
+                            font: {
+                                family: 'monospace'
+                            },
+                            generateLabels: (chart) => {
+                                return chart.data.datasets.map((dataset, i) => ({
+                                    text: `${dataset.value || ''} ${dataset.label}`,
+                                    fillStyle: dataset.borderColor,
+                                    strokeStyle: dataset.borderColor,
+                                    lineWidth: dataset.borderWidth,
+                                    hidden: dataset.hidden,
+                                    index: i
+                                }));
+                            }
+                        },
+                        onClick: (e, legendItem, legend) => {
+                            const index = legendItem.index;
+                            const chart = legend.chart;
+                            const meta = chart.getDatasetMeta(index);
+                            const dataset = chart.data.datasets[index];
 
-    // Обновление легенды с текущими значениями
-    updateLegend(chart, updates, config) {
-        const datasets = chart.data.datasets;
-        updates.forEach(({ sensorId, data }, i) => {
-            if (data && data.length > 0) {
-                const lastValue = data[data.length - 1][1];
-                const name = this.formatSensorName(sensorId);
-                const value = this.formatValue(lastValue, config.unit);
-                datasets[i].label = name;
-                datasets[i].value = value;
+                            if (!dataset.highlighted && !meta.hidden) {
+                                // Обычный -> Жирный
+                                dataset.highlighted = true;
+                                dataset.borderWidth = 3;
+                            } else if (dataset.highlighted && !meta.hidden) {
+                                // Жирный -> Скрытый
+                                meta.hidden = true;
+                                dataset.hidden = true;
+                                dataset.highlighted = false;
+                                dataset.borderWidth = 1;
+                            } else {
+                                // Скрытый -> Обычный
+                                meta.hidden = false;
+                                dataset.hidden = false;
+                                dataset.highlighted = false;
+                                dataset.borderWidth = 1;
+                            }
+
+                            chart.update();
+                        }
+                    }
+                }
             }
         });
+        
+        this.charts.set(canvasId.split('-')[0], chart);
+        return chart;
     }
 
-    // Обновление данных графика
-    async updateChart(type, info) {
-        const { chart, sensors, config } = info;
-        
-        try {
-            // Получаем новые данные для всех сенсоров
-            const updates = await Promise.all(
-                sensors.map(async sensorId => {
-                    const response = await fetch(`/api/data/${sensorId}`);
-                    const data = await response.json();
-                    return { sensorId, data };
-                })
-            );
+    // Создание датасета для сенсора
+    createDataset(sensorId, color) {
+        return {
+            label: this.formatSensorName(sensorId),
+            sensorId: sensorId,
+            data: [],
+            borderColor: color,
+            backgroundColor: color,
+            borderWidth: 1,
+            tension: 0.2,
+            pointRadius: 0,
+            fill: false
+        };
+    }
 
-            // Обновляем все датасеты
-            updates.forEach(({ sensorId, data }, index) => {
-                chart.data.datasets[index].data = data.map(([x, y]) => ({x, y}));
+    // Инициализация графиков
+    initCharts() {
+        console.log('Initializing charts');
+        for (const [type, config] of Object.entries(window.SENSOR_TYPES)) {
+            const sensors = window.INITIAL_SENSORS[type] || [];
+            if (!sensors.length) continue;
+
+            console.log(`Creating chart for ${type} with ${sensors.length} sensors`);
+            
+            // Создаём график
+            const chart = this.createChart(`${type}-chart`, config);
+            
+            // Добавляем датасеты для каждого сенсора
+            sensors.forEach(sensorId => {
+                const color = getRandomColor();
+                this.sensorColors.set(sensorId, color);
+                chart.data.datasets.push(this.createDataset(sensorId, color));
             });
+            
+            chart.update();
+            
+            // Загружаем начальные данные
+            this.loadChartData(type, chart);
+        }
+    }
 
-            // Обновляем легенду с текущими значениями
-            this.updateLegend(chart, updates, config);
+    // Загрузка данных для всего графика
+    async loadChartData(type, chart) {
+        console.log(`Loading data for ${type}`);
+        const { start, end } = this.getPeriodRange();
+        
+        // Загружаем данные для каждого сенсора
+        const updates = await Promise.all(
+            chart.data.datasets.map(async dataset => {
+                const url = `/api/data/${dataset.sensorId}?start=${start}&end=${end}`;
+                console.log(`Fetching: ${url}`);
+                
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    console.log(`Got ${data.length} points for ${dataset.sensorId}`);
+                    
+                    // Обновляем данные
+                    dataset.data = data;
+                    
+                    // Обновляем значение в легенде
+                    if (data.length > 0) {
+                        const lastValue = data[data.length - 1][1];
+                        dataset.value = lastValue.toFixed(1);
+                    }
+                    
+                } catch (error) {
+                    console.error(`Error loading data for ${dataset.sensorId}:`, error);
+                }
+            })
+        );
+        
+        chart.update('none');
+    }
 
-            chart.update('none');  // без анимации
-        } catch (error) {
-            console.error(`Error updating ${type}:`, error);
+    // Перезагрузка данных для всех графиков
+    reloadAllData() {
+        console.log('Reloading all data');
+        for (const [type, chart] of this.charts.entries()) {
+            this.loadChartData(type, chart);
         }
     }
 
     // Запуск периодического обновления
     startUpdates() {
         // Обновляем каждые 5 секунд
-        setInterval(() => {
-            for (const [type, info] of this.charts.entries()) {
-                this.updateChart(type, info);
-            }
-        }, 5000);
-
-        // И сразу обновляем первый раз
-        for (const [type, info] of this.charts.entries()) {
-            this.updateChart(type, info);
-        }
+        setInterval(() => this.reloadAllData(), 5000);
     }
 }
 
 // Создаём графики когда страница загрузится
 document.addEventListener('DOMContentLoaded', () => {
-    new SensorCharts();
+    window.charts = new SensorCharts();
 });
