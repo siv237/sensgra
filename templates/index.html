@@ -24,9 +24,9 @@
     </nav>
 
     <!-- Основной контент -->
-    <div class="container-fluid mt-4">
+    <div class="container-fluid">
         <!-- Кнопки выбора периода -->
-        <div class="btn-group mb-3" role="group" aria-label="Период времени">
+        <div class="btn-group mb-2" role="group" aria-label="Период времени">
             <button type="button" class="btn btn-outline-secondary period-btn active" data-period="10m">10 минут</button>
             <button type="button" class="btn btn-outline-secondary period-btn" data-period="1h">1 час</button>
             <button type="button" class="btn btn-outline-secondary period-btn" data-period="1d">1 день</button>
@@ -50,7 +50,7 @@
         </ul>
 
         <!-- Контент табов -->
-        <div class="tab-content mt-3" id="sensorTabsContent">
+        <div class="tab-content mt-2" id="sensorTabsContent">
             {% for type, config in sensor_types.items() %}
             <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
                  id="{{ type }}-pane" 

@@ -120,6 +120,8 @@ class SensorCharts {
             data: { datasets: [] },
             options: {
                 animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
                 interaction: {
                     intersect: false,
                     mode: 'nearest'
