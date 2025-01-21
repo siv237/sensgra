@@ -99,19 +99,15 @@ class SensorCharts {
     // Форматирование имени сенсора
     formatSensorName(sensorId) {
         const parts = sensorId.split('_');
-        const device = parts[0]
-            .replace(/-/g, ' ')
-            .replace(/isa|pci/g, '')
-            .trim()
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-            
-        const sensor = parts[parts.length - 3]
-            .replace(/([A-Z])/g, ' $1')
-            .trim();
-            
-        return `${device} - ${sensor}`;
+        // Последние 3 части это: имя_датчика, номер, тип_значения
+        // Например: Core_0_temp2 или System_Temp_temp1
+        const sensorName = parts.slice(0, -2).join('_');
+        
+        // Убираем имя устройства из начала
+        const deviceName = parts[0];
+        const name = sensorName.substring(deviceName.length + 1);
+        
+        return name || sensorName;
     }
 
     // Создание графика
