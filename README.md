@@ -89,6 +89,7 @@ sudo sensors-detect --auto
 # Убедитесь что загружены нужные модули ядра
 sudo modprobe coretemp  # Сенсоры температуры процессора
 sudo modprobe nct6775   # Сенсоры материнской платы (если есть)
+sudo modprobe drivetemp # Сенсоры температуры жестких дисков
 
 # Проверка что сенсоры определились
 sensors -j
@@ -96,6 +97,10 @@ sensors -j
 
 3. Настройте калибровку сенсоров:
 ```bash
+# Основной конфиг lm-sensors находится в /etc/sensors3.conf
+# Пользовательские настройки нужно размещать в /etc/sensors.d/
+# чтобы они не затерлись при обновлении пакета
+
 # Создаем файл с настройками для вашей материнской платы
 sudo nano /etc/sensors.d/myboard.conf
 
@@ -126,6 +131,7 @@ sudo service kmod restart
 # Создаем конфиг для автозагрузки модулей
 echo "coretemp" | sudo tee /etc/modules-load.d/sensors.conf
 echo "nct6775" | sudo tee -a /etc/modules-load.d/sensors.conf
+echo "drivetemp" | sudo tee -a /etc/modules-load.d/sensors.conf
 
 # Применяем изменения
 sudo systemctl restart systemd-modules-load
