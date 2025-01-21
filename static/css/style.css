@@ -110,3 +110,29 @@ body {
     flex-grow: 1;
     padding: 2px 4px;
 }
+
+/* Кнопки периода */
+.btn-group {
+    margin-left: 1rem;
+}
+
+.period-btn {
+    min-width: 100px;
+    font-family: monospace;
+    transition: all 0.2s ease;
+}
+
+.period-btn:hover {
+    background-color: #e9ecef;
+}
+
+.period-btn.active {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.period-btn.active:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+}

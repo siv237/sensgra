@@ -25,6 +25,14 @@
 
     <!-- Основной контент -->
     <div class="container-fluid mt-4">
+        <!-- Кнопки выбора периода -->
+        <div class="btn-group mb-3" role="group" aria-label="Период времени">
+            <button type="button" class="btn btn-outline-secondary period-btn active" data-period="10m">10 минут</button>
+            <button type="button" class="btn btn-outline-secondary period-btn" data-period="1h">1 час</button>
+            <button type="button" class="btn btn-outline-secondary period-btn" data-period="1d">1 день</button>
+            <button type="button" class="btn btn-outline-secondary period-btn" data-period="1w">1 неделя</button>
+        </div>
+
         <!-- Табы с типами сенсоров -->
         <ul class="nav nav-tabs" id="sensorTabs" role="tablist">
             {% for type, config in sensor_types.items() %}

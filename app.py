@@ -130,8 +130,12 @@ def get_sensor_data(sensor_name):
     start = request.args.get('start')
     end = request.args.get('end', 'now')
     
+    app.logger.info(f"Запрос данных: sensor={sensor_name}, start={start}, end={end}")
+    
     # Получаем данные с учетом диапазона
     data = sensor_manager.get_sensor_data(sensor_name, start, end)
+    
+    app.logger.info(f"Возвращаем {len(data)} точек данных")
     return jsonify(data)
 
 if __name__ == '__main__':
