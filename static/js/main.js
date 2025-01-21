@@ -198,7 +198,7 @@ class SensorCharts {
                         callbacks: {
                             title: (items) => formatDateTime(new Date(items[0].parsed.x)),
                             label: (item) => {
-                                const value = item.parsed.y.toFixed(1);
+                                const value = item.parsed.y.toFixed(2);
                                 return `${item.dataset.label}: ${value}${config.unit}`;
                             }
                         }
@@ -378,7 +378,7 @@ class SensorCharts {
                     if (data.length > 0) {
                         const lastValue = data[data.length - 1][1];
                         dataset.value = lastValue;  // Сохраняем точное значение для сортировки
-                        dataset.value = lastValue.toFixed(1);  // Форматированное значение для отображения
+                        dataset.value = lastValue.toFixed(2);  // Форматированное значение для отображения
                     }
                     
                     // Восстанавливаем состояние
