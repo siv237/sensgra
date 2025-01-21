@@ -128,12 +128,10 @@ class SensorCharts {
                     x: {
                         type: 'time',
                         time: {
-                            unit: 'minute',
                             displayFormats: {
                                 minute: 'HH:mm',
                                 hour: 'HH:mm',
-                                day: 'DD.MM',
-                                week: 'DD.MM'
+                                day: 'DD.MM.YYYY'
                             }
                         },
                         title: {
@@ -142,7 +140,30 @@ class SensorCharts {
                         },
                         // Явно задаем границы оси X
                         min: undefined,  // Будем устанавливать динамически
-                        max: undefined   // Будем устанавливать динамически
+                        max: undefined,  // Будем устанавливать динамически
+                        grid: {
+                            display: true,
+                            color: (ctx) => {
+                                const hour = new Date(ctx.tick.value).getHours();
+                                return hour === 0 ? '#666' : '#eee';
+                            },
+                            lineWidth: (ctx) => {
+                                const hour = new Date(ctx.tick.value).getHours();
+                                return hour === 0 ? 1 : 0.5;
+                            }
+                        },
+                        ticks: {
+                            source: 'auto',
+                            maxRotation: 0,
+                            callback: function(value) {
+                                const date = new Date(value);
+                                const hours = date.getHours();
+                                if (hours === 0) {
+                                    return date.toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                                }
+                                return date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+                            }
+                        }
                     },
                     y: {
                         title: {
@@ -281,6 +302,26 @@ class SensorCharts {
         // Устанавливаем границы оси X
         chart.options.scales.x.min = startTime;
         chart.options.scales.x.max = endTime;
+        
+        // Настраиваем unit в зависимости от периода
+        switch(this.currentPeriod) {
+            case '10m':
+                chart.options.scales.x.time.unit = 'minute';
+                chart.options.scales.x.time.stepSize = 1;
+                break;
+            case '1h':
+                chart.options.scales.x.time.unit = 'minute';
+                chart.options.scales.x.time.stepSize = 5;
+                break;
+            case '1d':
+                chart.options.scales.x.time.unit = 'hour';
+                chart.options.scales.x.time.stepSize = 2;
+                break;
+            case '1w':
+                chart.options.scales.x.time.unit = 'day';
+                chart.options.scales.x.time.stepSize = 1;
+                break;
+        }
         
         // Загружаем данные для каждого сенсора
         const updates = await Promise.all(
